@@ -74,11 +74,8 @@ export function MessageForm({ guest, openedAt }: Props) {
     if (!result.ok) {
       setStatus('idle')
       setError(t.errorGeneric)
-      toast.error(t.errorGeneric)
+      toast.error('Gửi chưa được, thử lại nhaaa')
       return
-    }
-    if (result.localOnly) {
-      toast('Chưa nối Google Sheet — lời nhắn được lưu tạm trên máy này.')
     }
     setStatus('sent')
   }

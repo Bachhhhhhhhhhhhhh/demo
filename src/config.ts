@@ -130,7 +130,8 @@ export const COPY = {
     successMessage:
       'Cảm ơn rất nhiều vì lời nhắn dễ thương này. Bách sẽ đọc từng dòng một ạaa!',
     errorEmpty: 'Bạn chưa chọn trạng thái hoặc chưa viết lời nhắn nào.',
-    errorGeneric: 'Gửi chưa được, thử lại nhaaa',
+    errorGeneric:
+      'Gửi chưa vào Google Sheet. Mở Apps Script → Deploy → Manage deployments → New version, Who has access: Anyone, rồi thử lại nhaaa.',
     another: 'Gửi thêm lời nhắn khác',
   },
   footer: {

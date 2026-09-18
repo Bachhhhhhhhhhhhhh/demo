@@ -213,42 +213,65 @@ export function readLocalResponses(): ResponseRow[] {
   }
 }
 
-function postViaHiddenForm(url: string, payload: SheetPayload) {
-  const iframe = document.createElement('iframe')
-  iframe.name = `gs-${Date.now()}`
-  iframe.setAttribute('aria-hidden', 'true')
-  iframe.style.display = 'none'
-  const form = document.createElement('form')
-  form.method = 'POST'
-  form.action = url
-  form.target = iframe.name
-  form.acceptCharset = 'UTF-8'
-  form.style.display = 'none'
+function compactPayload(payload: SheetPayload): Record<string, string> {
+  const out: Record<string, string> = {}
   for (const [key, value] of Object.entries(payload)) {
-    const input = document.createElement('input')
-    input.type = 'hidden'
-    input.name = key
-    input.value = String(value ?? '')
-    form.appendChild(input)
+    if (value === undefined || value === null) continue
+    let text = String(value)
+    if (key === 'user_agent') text = text.slice(0, 80)
+    if (key === 'message_to_bach') text = text.slice(0, 1500)
+    out[key] = text
   }
-  document.body.appendChild(iframe)
-  document.body.appendChild(form)
-  form.submit()
-  window.setTimeout(() => {
-    form.remove()
-    iframe.remove()
-  }, 8000)
+  return out
 }
 
-async function postOnce(url: string, payload: SheetPayload): Promise<boolean> {
-  await fetch(url, {
-    method: 'POST',
-    mode: 'no-cors',
-    redirect: 'follow',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload),
+function postViaJsonp(url: string, payload: SheetPayload, timeoutMs = 15000): Promise<boolean> {
+  return new Promise((resolve) => {
+    const cb = `__gs_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+    const params = new URLSearchParams(compactPayload(payload))
+    params.set('callback', cb)
+    const script = document.createElement('script')
+    let done = false
+    const w = window as unknown as Record<string, unknown>
+    const finish = (ok: boolean) => {
+      if (done) return
+      done = true
+      window.clearTimeout(timer)
+      script.remove()
+      delete w[cb]
+      resolve(ok)
+    }
+    const timer = window.setTimeout(() => finish(false), timeoutMs)
+    w[cb] = (data: { ok?: boolean }) => {
+      finish(data?.ok !== false)
+    }
+    script.onerror = () => finish(false)
+    script.src = `${url}?${params.toString()}`
+    document.head.appendChild(script)
   })
-  return true
+}
+
+function postJsonBeacon(url: string, payload: SheetPayload) {
+  try {
+    const blob = new Blob([JSON.stringify(payload)], { type: 'text/plain;charset=utf-8' })
+    return navigator.sendBeacon(url, blob)
+  } catch {
+    return false
+  }
+}
+
+async function postJsonManual(url: string, payload: SheetPayload) {
+  try {
+    await fetch(url, {
+      method: 'POST',
+      redirect: 'manual',
+      credentials: 'omit',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+    })
+  } catch {
+    /* CORS / redirect — request may still have hit doPost */
+  }
 }
 
 export async function postToSheet(payload: SheetPayload): Promise<{ ok: boolean; localOnly: boolean }> {
@@ -256,20 +279,12 @@ export async function postToSheet(payload: SheetPayload): Promise<{ ok: boolean;
   const url = webappUrl()
   if (!url) return { ok: false, localOnly: true }
 
-  try {
-    await postOnce(url, payload)
-    postViaHiddenForm(url, payload)
-    return { ok: true, localOnly: false }
-  } catch (err) {
-    console.warn('sheet fetch failed, using form POST', err)
-    try {
-      postViaHiddenForm(url, payload)
-      return { ok: true, localOnly: false }
-    } catch (err2) {
-      console.warn('sheet write failed', err2)
-      return { ok: false, localOnly: true }
-    }
-  }
+  const confirmed = await postViaJsonp(url, payload)
+  if (confirmed) return { ok: true, localOnly: false }
+
+  postJsonBeacon(url, payload)
+  await postJsonManual(url, payload)
+  return { ok: false, localOnly: true }
 }
 
 export async function loadAdminData(): Promise<{

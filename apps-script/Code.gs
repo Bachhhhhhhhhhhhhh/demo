@@ -1,24 +1,32 @@
 /**
  * Apps Script cho thiệp mời Trương Thế Bách — DAV
- * Dán vào Extensions → Apps Script của sheet:
- * https://docs.google.com/spreadsheets/d/1F3GS5Id72F1PDbfLJ6922QqQ4e_tFajzib36mdNjRrQ
  *
- * Deploy → New deployment → Web app
+ * BẮT BUỘC sau khi dán:
+ * Deploy → Manage deployments → biểu tượng bút → Version: New version → Deploy
+ *
  * Execute as: Me
  * Who has access: Anyone
+ *
+ * Sheet:
+ * https://docs.google.com/spreadsheets/d/1F3GS5Id72F1PDbfLJ6922QqQ4e_tFajzib36mdNjRrQ
  */
 
 var SHEET_ID = '1F3GS5Id72F1PDbfLJ6922QqQ4e_tFajzib36mdNjRrQ';
-// Đặt trùng VITE_ADMIN_KEY (tuỳ chọn). Để trống thì /admin?action=list vẫn đọc được.
 var ADMIN_KEY = 'bach2026';
 
 function ss_() {
   return SpreadsheetApp.openById(SHEET_ID);
 }
 
-function json_(obj) {
+function json_(obj, callback) {
+  var text = JSON.stringify(obj);
+  if (callback) {
+    return ContentService
+      .createTextOutput(callback + '(' + text + ')')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
   return ContentService
-    .createTextOutput(JSON.stringify(obj))
+    .createTextOutput(text)
     .setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -55,19 +63,17 @@ function rowsAsObjects_(sheetName) {
 }
 
 function parseBody_(e) {
-  if (e && e.postData && e.postData.contents) {
-    try { return JSON.parse(e.postData.contents); } catch (err) {}
-    try {
-      var parts = e.postData.contents.split('&');
-      var o = {};
-      parts.forEach(function (p) {
-        var kv = p.split('=');
-        o[decodeURIComponent(kv[0] || '')] = decodeURIComponent((kv[1] || '').replace(/\+/g, ' '));
-      });
-      return o;
-    } catch (err2) {}
+  var data = {};
+  if (e && e.parameter) {
+    Object.keys(e.parameter).forEach(function (k) { data[k] = e.parameter[k]; });
   }
-  return (e && e.parameter) ? e.parameter : {};
+  if (e && e.postData && e.postData.contents) {
+    try {
+      var parsed = JSON.parse(e.postData.contents);
+      Object.keys(parsed).forEach(function (k) { data[k] = parsed[k]; });
+    } catch (err) {}
+  }
+  return data;
 }
 
 function writeOpen_(data) {
@@ -94,34 +100,36 @@ function writeResponse_(data) {
   ]);
 }
 
-function doPost(e) {
-  var data = parseBody_(e);
-  if (data.action === 'open') writeOpen_(data);
-  else writeResponse_(data);
-  return json_({ ok: true });
-}
-
-function doGet(e) {
-  ensureSheets_();
-  var p = (e && e.parameter) ? e.parameter : {};
-  if (p.action === 'open') {
-    writeOpen_(p);
-    return json_({ ok: true });
+function handle_(data) {
+  var action = String(data.action || '');
+  if (action === 'open') {
+    writeOpen_(data);
+    return { ok: true, saved: 'open' };
   }
-  if (p.action === 'submit') {
-    writeResponse_(p);
-    return json_({ ok: true });
+  if (action === 'submit') {
+    writeResponse_(data);
+    return { ok: true, saved: 'submit' };
   }
-  if (p.action === 'list') {
-    if (ADMIN_KEY && p.key && p.key !== ADMIN_KEY) {
-      return json_({ ok: false, error: 'unauthorized' });
+  if (action === 'list') {
+    if (ADMIN_KEY && data.key && data.key !== ADMIN_KEY) {
+      return { ok: false, error: 'unauthorized' };
     }
-    return json_({
+    return {
       ok: true,
       guests: rowsAsObjects_('Guests'),
       opens: rowsAsObjects_('Opens'),
       responses: rowsAsObjects_('Responses')
-    });
+    };
   }
-  return json_({ ok: true, guests: rowsAsObjects_('Guests') });
+  ensureSheets_();
+  return { ok: true, guests: rowsAsObjects_('Guests') };
+}
+
+function doPost(e) {
+  return json_(handle_(parseBody_(e)));
+}
+
+function doGet(e) {
+  var data = (e && e.parameter) ? e.parameter : {};
+  return json_(handle_(data), data.callback);
 }
