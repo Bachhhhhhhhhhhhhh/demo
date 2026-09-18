@@ -7,7 +7,7 @@ export const HOST = {
   school: 'Học viện Ngoại giao',
   schoolShort: 'DAV',
   city: 'Hà Nội, Việt Nam',
-  photo: '/sprites/poster.jpg',
+  photo: `${import.meta.env.BASE_URL}sprites/poster.jpg`,
   photoCaption: 'ẢNH LỄ TỐT NGHIỆP — DAV 2026',
   phone: '098 765 4321',
   phoneHref: 'tel:+84987654321',

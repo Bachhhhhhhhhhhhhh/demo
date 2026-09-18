@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { COPY } from '../config'
+import { assetUrl } from '../lib/assets'
 
-const WALK = ['/sprites/walk-1.png', '/sprites/walk-2.png', '/sprites/walk-3.png']
-const JUMP = '/sprites/jump.png'
+const WALK = [assetUrl('sprites/walk-1.png'), assetUrl('sprites/walk-2.png'), assetUrl('sprites/walk-3.png')]
+const JUMP = assetUrl('sprites/jump.png')
 
 const WALK_IN = 3600
 const WAVE = 2400

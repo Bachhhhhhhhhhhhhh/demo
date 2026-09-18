@@ -213,55 +213,62 @@ export function readLocalResponses(): ResponseRow[] {
   }
 }
 
+function postViaHiddenForm(url: string, payload: SheetPayload) {
+  const iframe = document.createElement('iframe')
+  iframe.name = `gs-${Date.now()}`
+  iframe.setAttribute('aria-hidden', 'true')
+  iframe.style.display = 'none'
+  const form = document.createElement('form')
+  form.method = 'POST'
+  form.action = url
+  form.target = iframe.name
+  form.acceptCharset = 'UTF-8'
+  form.style.display = 'none'
+  for (const [key, value] of Object.entries(payload)) {
+    const input = document.createElement('input')
+    input.type = 'hidden'
+    input.name = key
+    input.value = String(value ?? '')
+    form.appendChild(input)
+  }
+  document.body.appendChild(iframe)
+  document.body.appendChild(form)
+  form.submit()
+  window.setTimeout(() => {
+    form.remove()
+    iframe.remove()
+  }, 8000)
+}
+
 async function postOnce(url: string, payload: SheetPayload): Promise<boolean> {
-  const res = await fetch(url, {
+  await fetch(url, {
     method: 'POST',
+    mode: 'no-cors',
     redirect: 'follow',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(payload),
   })
-  // Apps Script 302 → googleusercontent; CORS may hide body.
-  if (res.type === 'opaque' || res.type === 'opaqueredirect') return true
-  if (!res.ok) throw new Error(`post ${res.status}`)
-  try {
-    const data = await res.json()
-    return data.ok !== false
-  } catch {
-    return true
-  }
-}
-
-async function getWriteFallback(url: string, payload: SheetPayload): Promise<boolean> {
-  const params = new URLSearchParams()
-  for (const [k, v] of Object.entries(payload)) {
-    params.set(k, String(v ?? ''))
-  }
-  const res = await fetch(`${url}?${params.toString()}`)
-  if (!res.ok) throw new Error(`get ${res.status}`)
   return true
 }
 
 export async function postToSheet(payload: SheetPayload): Promise<{ ok: boolean; localOnly: boolean }> {
   backupLocal(payload)
   const url = webappUrl()
-  if (!url) return { ok: true, localOnly: true }
+  if (!url) return { ok: false, localOnly: true }
 
-  let lastError: unknown = null
-  for (let i = 0; i < 3; i++) {
-    try {
-      await postOnce(url, payload)
-      return { ok: true, localOnly: false }
-    } catch (err) {
-      lastError = err
-    }
-  }
   try {
-    await getWriteFallback(url, payload)
+    await postOnce(url, payload)
+    postViaHiddenForm(url, payload)
     return { ok: true, localOnly: false }
   } catch (err) {
-    lastError = err
-    console.warn('sheet write failed', lastError)
-    return { ok: false, localOnly: true }
+    console.warn('sheet fetch failed, using form POST', err)
+    try {
+      postViaHiddenForm(url, payload)
+      return { ok: true, localOnly: false }
+    } catch (err2) {
+      console.warn('sheet write failed', err2)
+      return { ok: false, localOnly: true }
+    }
   }
 }
 
