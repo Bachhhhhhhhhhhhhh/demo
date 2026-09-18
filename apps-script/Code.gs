@@ -14,8 +14,13 @@
 var SHEET_ID = '1F3GS5Id72F1PDbfLJ6922QqQ4e_tFajzib36mdNjRrQ';
 var ADMIN_KEY = 'bach2026';
 
-function ss_() {
-  return SpreadsheetApp.openById(SHEET_ID);
+function targetId_(data) {
+  var id = data && data.spreadsheet_id ? String(data.spreadsheet_id).trim() : '';
+  return id || SHEET_ID;
+}
+
+function ss_(data) {
+  return SpreadsheetApp.openById(targetId_(data));
 }
 
 function json_(obj, callback) {
@@ -30,8 +35,8 @@ function json_(obj, callback) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-function ensureSheets_() {
-  var ss = ss_();
+function ensureSheets_(data) {
+  var ss = ss_(data);
   var specs = {
     Guests: ['name', 'aliases', 'relation', 'message', 'honorific'],
     Responses: ['timestamp', 'guest_name', 'attending', 'companions', 'phone', 'message_to_bach', 'user_agent', 'opened_at'],
@@ -47,8 +52,8 @@ function ensureSheets_() {
   });
 }
 
-function rowsAsObjects_(sheetName) {
-  var sh = ss_().getSheetByName(sheetName);
+function rowsAsObjects_(sheetName, data) {
+  var sh = ss_(data).getSheetByName(sheetName);
   if (!sh) return [];
   var values = sh.getDataRange().getValues();
   if (values.length < 2) return [];
@@ -77,8 +82,8 @@ function parseBody_(e) {
 }
 
 function writeOpen_(data) {
-  ensureSheets_();
-  ss_().getSheetByName('Opens').appendRow([
+  ensureSheets_(data);
+  ss_(data).getSheetByName('Opens').appendRow([
     new Date(),
     data.guest_name || '',
     data.match_type || '',
@@ -87,8 +92,8 @@ function writeOpen_(data) {
 }
 
 function writeResponse_(data) {
-  ensureSheets_();
-  ss_().getSheetByName('Responses').appendRow([
+  ensureSheets_(data);
+  ss_(data).getSheetByName('Responses').appendRow([
     new Date(),
     data.guest_name || '',
     data.attending || '',
@@ -102,13 +107,18 @@ function writeResponse_(data) {
 
 function handle_(data) {
   var action = String(data.action || '');
+  var ss = ss_(data);
+  var meta = { spreadsheet_id: ss.getId(), spreadsheet: ss.getName() };
   if (action === 'open') {
     writeOpen_(data);
-    return { ok: true, saved: 'open' };
+    return { ok: true, saved: 'open', spreadsheet_id: meta.spreadsheet_id, spreadsheet: meta.spreadsheet };
   }
   if (action === 'submit') {
     writeResponse_(data);
-    return { ok: true, saved: 'submit' };
+    return { ok: true, saved: 'submit', spreadsheet_id: meta.spreadsheet_id, spreadsheet: meta.spreadsheet };
+  }
+  if (action === 'ping') {
+    return { ok: true, saved: 'ping', spreadsheet_id: meta.spreadsheet_id, spreadsheet: meta.spreadsheet, url: ss.getUrl() };
   }
   if (action === 'list') {
     if (ADMIN_KEY && data.key && data.key !== ADMIN_KEY) {
@@ -116,13 +126,14 @@ function handle_(data) {
     }
     return {
       ok: true,
-      guests: rowsAsObjects_('Guests'),
-      opens: rowsAsObjects_('Opens'),
-      responses: rowsAsObjects_('Responses')
+      spreadsheet_id: meta.spreadsheet_id,
+      guests: rowsAsObjects_('Guests', data),
+      opens: rowsAsObjects_('Opens', data),
+      responses: rowsAsObjects_('Responses', data)
     };
   }
-  ensureSheets_();
-  return { ok: true, guests: rowsAsObjects_('Guests') };
+  ensureSheets_(data);
+  return { ok: true, spreadsheet_id: meta.spreadsheet_id, guests: rowsAsObjects_('Guests', data) };
 }
 
 function doPost(e) {

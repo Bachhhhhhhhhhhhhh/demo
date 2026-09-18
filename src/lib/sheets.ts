@@ -242,8 +242,10 @@ function postViaJsonp(url: string, payload: SheetPayload, timeoutMs = 15000): Pr
       resolve(ok)
     }
     const timer = window.setTimeout(() => finish(false), timeoutMs)
-    w[cb] = (data: { ok?: boolean }) => {
-      finish(data?.ok !== false)
+    w[cb] = (data: { ok?: boolean; saved?: string; spreadsheet_id?: string }) => {
+      const saved = data?.saved === 'open' || data?.saved === 'submit'
+      const sheetOk = !data?.spreadsheet_id || data.spreadsheet_id === SHEET_ID
+      finish(data?.ok === true && saved && sheetOk)
     }
     script.onerror = () => finish(false)
     script.src = `${url}?${params.toString()}`
@@ -275,15 +277,16 @@ async function postJsonManual(url: string, payload: SheetPayload) {
 }
 
 export async function postToSheet(payload: SheetPayload): Promise<{ ok: boolean; localOnly: boolean }> {
-  backupLocal(payload)
+  const full = { ...payload, spreadsheet_id: SHEET_ID }
+  backupLocal(full)
   const url = webappUrl()
   if (!url) return { ok: false, localOnly: true }
 
-  const confirmed = await postViaJsonp(url, payload)
+  const confirmed = await postViaJsonp(url, full)
   if (confirmed) return { ok: true, localOnly: false }
 
-  postJsonBeacon(url, payload)
-  await postJsonManual(url, payload)
+  postJsonBeacon(url, full)
+  await postJsonManual(url, full)
   return { ok: false, localOnly: true }
 }
 
