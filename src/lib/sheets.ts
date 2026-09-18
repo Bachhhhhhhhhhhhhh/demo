@@ -262,20 +262,6 @@ function postJsonBeacon(url: string, payload: SheetPayload) {
   }
 }
 
-async function postJsonManual(url: string, payload: SheetPayload) {
-  try {
-    await fetch(url, {
-      method: 'POST',
-      redirect: 'manual',
-      credentials: 'omit',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload),
-    })
-  } catch {
-    /* CORS / redirect — request may still have hit doPost */
-  }
-}
-
 export async function postToSheet(payload: SheetPayload): Promise<{ ok: boolean; localOnly: boolean }> {
   const full = { ...payload, spreadsheet_id: SHEET_ID }
   backupLocal(full)
@@ -286,8 +272,19 @@ export async function postToSheet(payload: SheetPayload): Promise<{ ok: boolean;
   if (confirmed) return { ok: true, localOnly: false }
 
   postJsonBeacon(url, full)
-  await postJsonManual(url, full)
-  return { ok: false, localOnly: true }
+  try {
+    await fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+      redirect: 'manual',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(full),
+    })
+    return { ok: true, localOnly: false }
+  } catch (err) {
+    console.warn('sheet write failed', err)
+    return { ok: false, localOnly: true }
+  }
 }
 
 export async function loadAdminData(): Promise<{
