@@ -216,9 +216,12 @@ export function readLocalResponses(): ResponseRow[] {
 async function postOnce(url: string, payload: SheetPayload): Promise<boolean> {
   const res = await fetch(url, {
     method: 'POST',
+    redirect: 'follow',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(payload),
   })
+  // Apps Script 302 → googleusercontent; CORS may hide body.
+  if (res.type === 'opaque' || res.type === 'opaqueredirect') return true
   if (!res.ok) throw new Error(`post ${res.status}`)
   try {
     const data = await res.json()

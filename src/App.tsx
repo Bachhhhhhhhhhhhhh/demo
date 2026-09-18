@@ -42,7 +42,7 @@ function InviteApp() {
       guest_name: guest.name,
       match_type: 'open',
       referrer: document.referrer || '',
-      user_agent: navigator.userAgent.slice(0, 400),
+      user_agent: navigator.userAgent,
     })
   }
 

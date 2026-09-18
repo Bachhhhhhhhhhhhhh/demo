@@ -68,7 +68,7 @@ export function MessageForm({ guest, openedAt }: Props) {
       companions,
       phone: phone.trim(),
       message_to_bach: message.trim(),
-      user_agent: navigator.userAgent.slice(0, 400),
+      user_agent: navigator.userAgent,
       opened_at: openedAt || nowIsoPlus7(),
     })
     if (!result.ok) {
