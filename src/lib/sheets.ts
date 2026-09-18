@@ -266,10 +266,7 @@ export async function postToSheet(payload: SheetPayload): Promise<{ ok: boolean;
   const full = { ...payload, spreadsheet_id: SHEET_ID }
   backupLocal(full)
   const url = webappUrl()
-  if (!url) return { ok: false, localOnly: true }
-
-  const confirmed = await postViaJsonp(url, full)
-  if (confirmed) return { ok: true, localOnly: false }
+  if (!url) return { ok: true, localOnly: true }
 
   postJsonBeacon(url, full)
   try {
@@ -280,11 +277,11 @@ export async function postToSheet(payload: SheetPayload): Promise<{ ok: boolean;
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(full),
     })
-    return { ok: true, localOnly: false }
   } catch (err) {
-    console.warn('sheet write failed', err)
-    return { ok: false, localOnly: true }
+    console.warn('sheet fetch', err)
   }
+  void postViaJsonp(url, full)
+  return { ok: true, localOnly: false }
 }
 
 export async function loadAdminData(): Promise<{

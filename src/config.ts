@@ -126,12 +126,11 @@ export const COPY = {
     textareaPlaceholder: 'Viết vài dòng gửi đến Bách nhé...',
     buttonLabel: 'GỬI LỜI NHẮN',
     sendingLabel: 'ĐANG GỬI...',
-    successTitle: 'Bách nhận được rồi nèee 💌',
+    successTitle: 'BÁCH ĐÃ NHẬN ĐƯỢC THÔNG TIN',
     successMessage:
-      'Cảm ơn rất nhiều vì lời nhắn dễ thương này. Bách sẽ đọc từng dòng một ạaa!',
+      'Cảm ơn thật nhiều ạaa 💌 Bách đọc được rồi, sẽ rep bé / mọi người sớm nhaaa.',
     errorEmpty: 'Bạn chưa chọn trạng thái hoặc chưa viết lời nhắn nào.',
-    errorGeneric:
-      'Gửi chưa vào Google Sheet. Mở Apps Script → Deploy → Manage deployments → New version, Who has access: Anyone, rồi thử lại nhaaa.',
+    errorGeneric: 'Gửi chưa được, thử lại nhaaa',
     another: 'Gửi thêm lời nhắn khác',
   },
   footer: {

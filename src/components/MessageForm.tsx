@@ -74,10 +74,11 @@ export function MessageForm({ guest, openedAt }: Props) {
     if (!result.ok) {
       setStatus('idle')
       setError(t.errorGeneric)
-      toast.error('Gửi chưa được, thử lại nhaaa')
+      toast.error(t.errorGeneric)
       return
     }
     setStatus('sent')
+    toast.success('Bách đã nhận được thông tin 💌')
   }
 
   return (
