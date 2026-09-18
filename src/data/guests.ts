@@ -1,3 +1,5 @@
+import { isNyBach } from '../lib/ny'
+
 export type Relation =
   | 'bo_me'
   | 'gia_dinh'
@@ -20,6 +22,16 @@ export function guestFromName(name: string): Guest {
   const trimmed = name.trim().replace(/\s+/g, ' ')
   const parts = trimmed.split(/\s+/).filter(Boolean)
   const short = parts[parts.length - 1] || trimmed
+  if (isNyBach(trimmed)) {
+    return {
+      name: trimmed,
+      aliases: ['ny', 'ny bách', 'người yêu'],
+      relation: 'nguoi_yeu',
+      honorific: 'bé',
+      message:
+        'Bé ơiii, đúng người rồi nèee 💌\nBách tốt nghiệp DAV rồiii — có NY ngồi dưới hội trường là mình vững tim nhất đóaa. Mặc đồ xinh, tới sớm một chút, mình sẽ nhìn xuống tìm bé đầu tiên nhaaa.\nYêu bé nhiềuu lắm. Ra trường rồi vẫn là của nhau đóaa.',
+    }
+  }
   return {
     name: trimmed,
     aliases: [],

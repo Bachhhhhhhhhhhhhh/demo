@@ -162,6 +162,31 @@
   .heart-float {
     animation: 1.4s steps(12, end) forwards heart-float;
   }
+
+  .pixel-box-love {
+    border: 3px solid hsl(353 76% 41%);
+    box-shadow:
+      6px 6px 0 0 hsl(43 94% 55%),
+      10px 10px 0 0 #f3a6b5;
+  }
+
+  .pixel-stripes-love {
+    background-image: repeating-linear-gradient(
+      90deg,
+      hsl(353 76% 41%) 0 8px,
+      hsl(43 94% 55%) 8px 16px,
+      #f3a6b5 16px 24px
+    );
+    border-top: 3px solid hsl(0 28% 12%);
+    border-bottom: 3px solid hsl(0 28% 12%);
+    height: 12px;
+  }
+
+  .pixel-love-float {
+    animation-name: pixel-love-float;
+    animation-timing-function: steps(14, end);
+    animation-iteration-count: infinite;
+  }
 }
 
 @keyframes pixel-blink {
@@ -186,6 +211,20 @@
   to {
     opacity: 0;
     transform: translateY(-46px) scale(1.15);
+  }
+}
+
+@keyframes pixel-love-float {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.7);
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-110vh) scale(1.15);
   }
 }
 
@@ -216,7 +255,8 @@
     box-shadow: 5px 5px 0 0 hsl(0 28% 12%);
   }
 
-  .heart-float {
+  .heart-float,
+  .pixel-love-float {
     animation: none;
   }
 }

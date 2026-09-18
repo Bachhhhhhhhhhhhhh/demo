@@ -1,7 +1,9 @@
 import { motion } from 'framer-motion'
 import { COPY, HOST } from '../config'
 import { letterFor, type Guest } from '../data/guests'
+import { isNyBach } from '../lib/ny'
 import { PixelGrad } from './PixelGrad'
+import { PixelLove } from './PixelLove'
 
 type Props = {
   guest: Guest
@@ -11,14 +13,16 @@ type Props = {
 export function Invitation({ guest, onSwitch }: Props) {
   const t = COPY.welcome
   const letter = letterFor(guest)
+  const love = isNyBach(guest.name) || guest.relation === 'nguoi_yeu'
 
   return (
     <section
       id="welcome"
-      className="relative min-h-[100svh] flex items-center px-4 sm:px-8 lg:px-16 py-20"
+      className={`relative min-h-[100svh] flex items-center px-4 sm:px-8 lg:px-16 py-20 ${love ? 'love-mode' : ''}`}
     >
-      <div className="max-w-4xl mx-auto w-full">
-        <div className="bg-card pixel-box p-5 sm:p-10">
+      {love && <PixelLove />}
+      <div className="max-w-4xl mx-auto w-full relative z-10">
+        <div className={`bg-card p-5 sm:p-10 ${love ? 'pixel-box-love' : 'pixel-box'}`}>
           <div className="flex items-start justify-between gap-4">
             <motion.p
               initial={{ opacity: 0 }}
@@ -26,7 +30,7 @@ export function Invitation({ guest, onSwitch }: Props) {
               transition={{ duration: 0.4 }}
               className="font-pixel text-lg sm:text-xl text-primary uppercase"
             >
-              {t.greetingPrefix}
+              {love ? 'Gửi riêng đến' : t.greetingPrefix}
             </motion.p>
             <button
               type="button"
@@ -36,23 +40,32 @@ export function Invitation({ guest, onSwitch }: Props) {
               {t.switchGuest}
             </button>
           </div>
+          {love && (
+            <motion.span
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="inline-block mt-3 font-pixel text-sm sm:text-base uppercase bg-primary text-primary-foreground border-[3px] border-border px-2 py-1"
+            >
+              ♡ NY CỦA BÁCH ♡
+            </motion.span>
+          )}
           <motion.h1
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.15, ease: 'easeOut' }}
-            className="font-display text-[15vw] sm:text-[6.5rem] lg:text-[8rem] text-foreground mt-2 break-words"
+            className={`font-display text-[15vw] sm:text-[6.5rem] lg:text-[8rem] mt-2 break-words ${love ? 'text-primary' : 'text-foreground'}`}
           >
-            {guest.name}
+            {love ? 'NY BÁCH' : guest.name}
           </motion.h1>
           <div className="mt-2">
-            <PixelGrad />
+            <PixelGrad love={love} />
           </div>
           <motion.div
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
             transition={{ duration: 0.5, delay: 0.35, ease: 'linear' }}
             style={{ transformOrigin: 'left' }}
-            className="pixel-stripes my-8"
+            className={love ? 'pixel-stripes-love my-8' : 'pixel-stripes my-8'}
           />
           <motion.p
             initial={{ opacity: 0, y: 12 }}

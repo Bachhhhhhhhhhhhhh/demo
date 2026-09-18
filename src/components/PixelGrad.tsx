@@ -41,7 +41,7 @@ function poseAt(t: number): Pose {
   }
 }
 
-export function PixelGrad({ alt = COPY.welcome.mascotAlt }: { alt?: string }) {
+export function PixelGrad({ alt = COPY.welcome.mascotAlt, love = false }: { alt?: string; love?: boolean }) {
   const reduced =
     typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -75,24 +75,25 @@ export function PixelGrad({ alt = COPY.welcome.mascotAlt }: { alt?: string }) {
   }, [reduced])
 
   useEffect(() => {
-    if (reduced || pose.phase !== 'wave') return
+    if (reduced) return
+    if (!love && pose.phase !== 'wave') return
     let n = 0
     const spawn = () => {
       const heart: Heart = {
         id: Date.now() + n++,
-        dx: Math.round((Math.random() - 0.5) * 28),
+        dx: Math.round((Math.random() - 0.5) * (love ? 48 : 28)),
         delay: Math.random() * 0.2,
       }
-      setHearts((h) => [...h, heart])
+      setHearts((h) => [...h.slice(-18), heart])
       window.setTimeout(
         () => setHearts((h) => h.filter((x) => x.id !== heart.id)),
         1600,
       )
     }
     spawn()
-    const id = window.setInterval(spawn, 420)
+    const id = window.setInterval(spawn, love ? 180 : 420)
     return () => window.clearInterval(id)
-  }, [pose.phase, reduced])
+  }, [pose.phase, reduced, love])
 
   const hop = pose.jumping ? -8 : [0, 2, 0, -3][pose.frame % WALK.length]
   const src = pose.jumping ? JUMP : WALK[pose.frame]
